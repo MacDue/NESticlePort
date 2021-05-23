@@ -1,7 +1,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
-#include <cstdio>
 #include "font.h"
 #include "gui.h"
 #include "mouse.h"
@@ -189,10 +188,10 @@ void GUItextedit::setinput(char* inp) {
 
 /* GUInumbertextedit */
 
-char* itoa(int num, char* buf, int base) {
+/*char* itoa(int num, char* buf, int base) {
   sprintf(buf, "%d", num);
   return buf;
-}
+} */
 
 GUInumbertextedit::GUInumbertextedit
   (GUIrect* parent, char* prompt, int input, int x, int y, int xw, int maxinputlen)

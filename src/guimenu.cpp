@@ -52,10 +52,8 @@ int menuitem::menufunc() {
 /* menu */
 int menu::getnumitems() {
   int numitems = 0;
-  class menuitem* item = this->m;
-  while (item->text) {
+  for(class menuitem* item = this->m; item->text; item++) {
     ++numitems;
-    item++;
   }
   return numitems;
 }
@@ -106,7 +104,7 @@ GUImenu::GUImenu(GUIrect* parent, class menu* m, int x, int y)
   : GUIrect(parent, x, y, x, y)
 {
   this->tmenu = m;
-  this->selmi = 0;
+  this->selmi = NULL;
 }
 
 GUIrect* GUImenu::click(class mouse &m) {
@@ -168,7 +166,12 @@ int GUImenu::drag(class mouse &m) {
     class menuitem* item = menuhittest(m.x - this->x1, m.y - this->y1, sx, sy);
     if (item != this->selmi) {
       this->selmi = item;
-      GUIrect* child;
+//      GUIrect* child;
+
+	  if(this->child) {
+		  delete this->child;
+		  this->child = NULL;
+	  }
       while(true) {
         /* Might be an infinite loop */
         child = this->child;
@@ -203,12 +206,16 @@ void GUImenu::losefocus() {
       break;
     }
     if (child) {
-      delete child;
+      //delete child;
+	  this->child = NULL;
     }
   }
   this->selmi = NULL;
 }
 
+void GUImenu::losechildfocus() {
+	GUIrect::losechildfocus();
+}
 
 int GUImenu::domenuitem(menuitem *i) {
   if (i) {
@@ -270,7 +277,7 @@ class menuitem* GUIvmenu::menuhittest(int x, int y, int &sx, int &sy) {
     }
   }
   // Unsure if correct:
-  if (item->text[0] == '-') {
+  if (item->text == NULL || item->text[0] == '-') {
     return NULL;
   } else {
     sx = this->width();
@@ -287,6 +294,10 @@ GUIhmenu::GUIhmenu(GUIrect* parent, class menu *m, int x, int y)
   this->x2 = this->x1 + this->getmenuwidth();
   this->y2 = this->y1 + this->getmenuheight();
   GUIrect::setfocus(this);
+}
+
+int GUIhmenu::keyhit(char kbscan,char key) {
+	return this->tmenu->keyhit(kbscan, key);
 }
 
 void GUIhmenu::draw(char* dest) {
@@ -342,6 +353,7 @@ GUIpopupmenu::GUIpopupmenu(GUIrect* treport, class menu* m, int x, int y)
   GUIrect::setmodal(this);
 }
 
+GUIpopupmenu::~GUIpopupmenu() {}
 
 int GUIpopupmenu::domenuitem(menuitem* t) {
   this->report->sendmessage(this, (t - this->tmenu->m)/sizeof(menuitem));

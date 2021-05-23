@@ -8,7 +8,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <cassert>
+#include <assert.h>
 #include "gui.h"
 #include "r2img.h"
 #include "font.h"
@@ -135,7 +135,7 @@ void GUIbutton::draw(char* dest) {
     drawvline(dest,/*color=*/27, /*x*/this->x1, /*y*/this->y1, /*y2*/ this->y2 - 1);
     drawhline(dest,/*color=*/27, /*x*/this->x1, /*y*/this->y2 - 1, this->x2 - 1);
   }
-  if (this->depressed) {
+/*  if (this->depressed) {
     if (this->parent) {
       if (this->btimer.check()) {
         GUIrect* hit = this->hittest(m.x, m.y);
@@ -145,7 +145,7 @@ void GUIbutton::draw(char* dest) {
         }
       }
     }
-  }
+  }*/
 }
 
 /* GUItextbutton */
@@ -157,7 +157,7 @@ GUItextbutton::GUItextbutton(GUIrect* parent, char* text, int x, int y)
   this->bwidth = text_width + 12;
   this->moverel(-(text_width + 12)/2, 0);
   this->x2 = this->x1 + this->bwidth;
-  this->y1 = this->y1 + 12;
+  this->y2 = this->y1 + 12;
   strcpy(this->text, text);
 }
 
@@ -455,16 +455,16 @@ GUIonebuttonbox::GUIonebuttonbox
     this,
     -113, /* color*/
     0,
-    this->height() -12,
+	0,
     this->width(),
-    12);
+    this->height());
   //  *(_BYTE *)(bar_ + 45) = -113; ?
   // TODO: Possibly incorrect.
   this->b1 = new GUItextbutton(
     this,
     b1name,
-    this->height() - 12,
-    this->width() / 2);
+    this->width() / 2,
+    this->height() - 12);
   this->contents->bringtofront();
 }
 
@@ -851,7 +851,7 @@ void GUIlistbox::freeitems() {
 }
 
 ITEMPTR* GUIlistbox::resizeitems(int n) {
-  this->items = realloc(this->items, sizeof(ITEMPTR) * n);
+  this->items = (void**)realloc(this->items, sizeof(ITEMPTR) * n);
   while (n > this->numitems) {
     this->numitems++;
     this->items[this->numitems] = NULL;
@@ -933,7 +933,7 @@ void GUIlistbox::draw(char* dest) {
     this->height());
   this->drawitems(dest, this->x1 + 1, this->y1 + 1);
   GUIrect::draw(dest);
-  if (this->depressed) {
+/*  if (this->depressed) {
     int selected_item = (m.y - this->y1) / this->itemheight;
     if (selected_item >= 0) {
       if (selected_item < this->itemv) {
@@ -954,7 +954,7 @@ void GUIlistbox::draw(char* dest) {
         this->timer.reset();
       }
     }
-  }
+  }    */
 }
 
 int GUIlistbox::keyhit(char kbscan, char key) {
@@ -1006,12 +1006,12 @@ void GUIstringlistbox::drawitems(char* dest, int x, int y) {
     }
     if (draw_item == this->sel) {
       drawrect(dest, 2, x, y, this->width()-2, this->itemheight);
-      char* str = this->items[draw_item];
+      char* str = (char*)this->items[draw_item];
       if (str) {
         font[1]->draw(str, dest, x, y);
       }
     } else {
-      char* str = this->items[draw_item];
+      char* str = (char*)this->items[draw_item];
       if (str) {
         font[1]->draw(str, dest, x, y);
       }

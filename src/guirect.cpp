@@ -16,6 +16,7 @@
 
 
 GUIrect *GUIrect::modal = NULL;
+
 void GUIrect::setmodal(GUIrect* modal) {
   GUIrect::modal = modal;
   m.capture = modal;
@@ -23,6 +24,9 @@ void GUIrect::setmodal(GUIrect* modal) {
 
 
 GUIrect::GUIrect(GUIrect* parent, int x1, int y1, int x2, int y2) {
+  // (x1,y1) is the top-left corner
+  // (x2,y2) is the bottom-right corner
+  // These checks ensure that this assumption is maintained.
   if (x2 <= x1) {
     this->x1 = x2;
     this->x2 = x1;
@@ -34,8 +38,8 @@ GUIrect::GUIrect(GUIrect* parent, int x1, int y1, int x2, int y2) {
     this->y1 = y2;
     this->y2 = y1;
   } else {
-    this->y2 = y1;
-    this->y1 = y2;
+    this->y1 = y1;
+    this->y2 = y2;
   }
   this->parent = NULL;
   this->child = this->lastchild = NULL;
@@ -53,7 +57,7 @@ void GUIrect::reparent(GUIrect* p) {
   this->parent = p;
   if (p) {
     moverel(p->x1, p->y1);
-    link(NULL); // Why tho???
+    link(p->lastchild); // Want to link at the end of list
     bringtofront();
   }
 }
@@ -76,7 +80,7 @@ void GUIrect::moveto(int x, int y) {
 
 
 void GUIrect::draw(char* dest) {
-  for (GUIrect* c = this->lastchild; c; c = this->prev) {
+  for (GUIrect* c = this->lastchild; c; c = c->prev) {
     /* TODO is this right so far */
     c->draw(dest);
   }
@@ -89,12 +93,9 @@ void GUIrect::link(GUIrect* t) {
     this->prev = t;
     if (t) {
       this->next = this->prev->next;
-    } else {
-      this->next = this->parent->child;
-    }
-    if (this->prev) {
       this->prev->next = this;
     } else {
+      this->next = this->parent->child;
       this->parent->child = this;
     }
     if (this->next) {
@@ -127,9 +128,9 @@ void GUIrect::unlink() {
 
 GUIrect* GUIrect::hittest(int x, int y) {
   /* Note rect structure seems to be:
-            -----------x1,y1
+          x1,y1--------x2,y1
             |           |
-          x2,y2----------
+          x1,y2--------x2,y2
   */
   GUIrect* hit;
   if (this->x1 <= x /* test seems wrong */
@@ -139,25 +140,18 @@ GUIrect* GUIrect::hittest(int x, int y) {
   ) {
     /* Inside this */
     if (this->child) {
-      GUIrect* c = this->child;
-      while (true) {
+      for(GUIrect *c = this->child; c != NULL; c = c->next) {
         hit = c->hittest(x,y);
-        if (hit) {
-          break;
-        }
-        c = c->next;
-        if (!c) {
-          goto hittest__no_children_left;
+        if(hit != NULL) {
+          return hit;
         }
       }
+    }
+    if (this == guiroot) {
+      this->losechildfocus();
+      hit = NULL;
     } else {
-hittest__no_children_left:
-      if (this == guiroot) {
-        this->losechildfocus();
-        hit = NULL;
-      } else {
-        hit = this;
-      }
+      hit = this;
     }
   } else {
     hit = NULL;
@@ -167,43 +161,30 @@ hittest__no_children_left:
 
 
 void GUIrect::bringtofront() {
-  if (this->parent) {
-    if (this->prev) {
-      unlink();
-      link(NULL);
-    }
+  if (this->parent && this->prev) {
+    unlink();
+    link(NULL);
   }
 }
 
 
 void GUIrect::sendtoback() {
-  if (this->parent) {
-    if (this->next) {
-      unlink();
-      link(this->lastchild);
-    }
+  if (this->parent && this->next) {
+    unlink();
+    link(this->lastchild);
   }
 }
 
 
 int GUIrect::keyhit(char kbscan, char key) {
-  int result;
+  int result = 0;
   if (this->focus) {
-    GUIrect* c = this->child;
-    if (c) {
-      while (!c->focus || !c->keyhit(kbscan, key)) {
-        c = c->next;
-        if (!c) {
-          goto keyhit__no_more_children;
-        }
-      }
-      result = 1;
-    } else {
-keyhit__no_more_children:
-      result = 0;
-    }
-  } else {
-    result = 0;
+	for(GUIrect *c = this->child; c != NULL; c = c->next) {
+		if(c->focus && c->keyhit(kbscan, key)) {
+			result = 1;
+			break;
+		}
+	}
   }
   return result;
 }
@@ -335,14 +316,12 @@ GUIroot::~GUIroot() {
 
 
 int GUIroot::keyhit(char kbscan, char key) {
-  int result;
   if (kbstat & 2 && kbscan == 15 /*TODO figure out meaning*/) {
     this->cyclefocus(0);
-    result = 1;
+    return 1;
   } else {
-    result = GUIrect::keyhit(kbscan, key);
+    return GUIrect::keyhit(kbscan, key);
   }
-  return result;
 }
 
 
@@ -373,4 +352,17 @@ int GUIcontents::keyhit(char kbscan, char key) {
     this->keyhit(kbscan, key);
   }
   return result;
+}
+
+
+int GUIdefx = 15, GUIdefy = 15;
+
+void nextGUIdef() {
+	GUIdefx += 20;
+   GUIdefy += 20;
+}
+
+void resetGUIdef() {
+	GUIdefx = SCREENX / 14;
+	GUIdefy = SCREENY / 14;
 }
