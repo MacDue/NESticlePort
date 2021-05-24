@@ -1,4 +1,7 @@
 # NESticlePort
+
+## NOTE: THIS CODE IS OUTDATED I HAVE A MORE COMPLETE AND WORKING VERSION AT [https://github.com/MacDue/NesticlePortSDL2](https://github.com/MacDue/NesticlePortSDL2)
+
 An experiment compiling the NESticle code released by [IamRifki](https://github.com/IamRifki/NESticle) with a current compiler.
 
 ## Status
